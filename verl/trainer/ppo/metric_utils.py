@@ -551,6 +551,39 @@ def calc_maj_val(data: list[dict[str, Any]], vote_key: str, val_key: str) -> flo
     return maj_val
 
 
+def _is_binary_metric(var_vals: list[Any]) -> bool:
+    """Return whether a metric consists only of binary 0/1 values."""
+    if not var_vals:
+        return False
+
+    try:
+        values = np.asarray(var_vals, dtype=np.float64)
+    except (TypeError, ValueError):
+        return False
+
+    if np.isnan(values).any():
+        return False
+
+    return np.all(np.logical_or(np.isclose(values, 0.0), np.isclose(values, 1.0)))
+
+
+def _calc_pass_at_k(n_resps: int, n_correct: int, k: int) -> float:
+    """Compute the standard pass@k estimator from ``n`` samples and ``c`` correct samples."""
+    assert 1 <= k <= n_resps, f"pass@k requires 1 <= k <= n, got {k=} and {n_resps=}"
+
+    if n_correct <= 0:
+        return 0.0
+    if k > n_resps - n_correct:
+        return 1.0
+
+    miss_prob = 1.0
+    for i in range(k):
+        miss_prob *= (n_resps - n_correct - i) / (n_resps - i)
+
+    return 1.0 - miss_prob
+    
+
+
 def process_validation_metrics(
     data_sources: list[str], sample_uids: list[str], infos_dict: dict[str, list[Any]], seed: int = 42
 ) -> dict[str, dict[str, dict[str, float]]]:
@@ -581,6 +614,7 @@ def process_validation_metrics(
         Where metric_name includes:
         - "mean@N": Mean value across N samples
         - "std@N": Standard deviation across N samples
+        - "pass@K": Standard pass@k estimator for binary metrics
         - "best@N/mean": Mean of the best values in bootstrap samples of size N
         - "best@N/std": Standard deviation of the best values in bootstrap samples
         - "worst@N/mean": Mean of the worst values in bootstrap samples
@@ -643,6 +677,7 @@ def process_validation_metrics(
                 # compute mean and std
                 n_resps = len(var_vals)
                 metric = {f"mean@{n_resps}": float(np_mean(var_vals))}
+                is_binary_metric = _is_binary_metric(var_vals)
 
                 if n_resps > 1:
                     metric[f"std@{n_resps}"] = float(np_std(var_vals))
@@ -683,6 +718,12 @@ def process_validation_metrics(
                             )
                             metric[f"maj@{n}/mean"] = maj_n_mean
                             metric[f"maj@{n}/std"] = maj_n_std
+
+                if is_binary_metric:
+                    pass_ns = [1] if n_resps == 1 else [1, *ns]
+                    n_correct = int(np.asarray(var_vals, dtype=np.int64).sum())
+                    for n in pass_ns:
+                        metric[f"pass@{n}"] = _calc_pass_at_k(n_resps=n_resps, n_correct=n_correct, k=n)
 
                 var_dict[var_name] = metric
 
