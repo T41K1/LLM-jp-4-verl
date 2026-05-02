@@ -115,6 +115,12 @@ trainer:
   # Directory for logging validation data; no dump if null
   validation_data_dir: null
 
+  # Validation metric options
+  val_metrics:
+
+    # Whether to compute pass@k for binary validation metrics
+    pass_at_k: False
+
   # Number of nodes used in the training
   nnodes: 1
 

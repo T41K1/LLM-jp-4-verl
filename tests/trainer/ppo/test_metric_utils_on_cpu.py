@@ -552,6 +552,28 @@ class TestProcessValidationMetrics(unittest.TestCase):
 
         result = process_validation_metrics(data_sources, sample_inputs, infos_dict, seed=42)
 
+        self.assertNotIn("pass@1", result["source1"]["acc"])
+
+        result = process_validation_metrics(
+            data_sources, sample_inputs, infos_dict, seed=42, compute_pass_at_k=True
+        )
+
+        self.assertAlmostEqual(result["source1"]["acc"]["pass@1"], 0.25)
+        self.assertAlmostEqual(result["source1"]["acc"]["pass@2"], 0.5)
+        self.assertAlmostEqual(result["source1"]["acc"]["pass@4"], 1.0)
+
+    def test_process_validation_metrics_with_near_binary_pass_at_k(self):
+        """Test process_validation_metrics counts near-binary correct values consistently."""
+        data_sources = ["source1"] * 4
+        sample_inputs = ["prompt1"] * 4
+        infos_dict = {
+            "acc": [0.999999999, 0.0, 0.0, 0.0],
+        }
+
+        result = process_validation_metrics(
+            data_sources, sample_inputs, infos_dict, seed=42, compute_pass_at_k=True
+        )
+
         self.assertAlmostEqual(result["source1"]["acc"]["pass@1"], 0.25)
         self.assertAlmostEqual(result["source1"]["acc"]["pass@2"], 0.5)
         self.assertAlmostEqual(result["source1"]["acc"]["pass@4"], 1.0)
