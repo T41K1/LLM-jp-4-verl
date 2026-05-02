@@ -647,7 +647,7 @@ def process_validation_metrics(
         if n_resps <= 1:
             return []
         ns = []
-        n = 2
+        n = 1
         while n < n_resps:
             ns.append(n)
             n *= 2
