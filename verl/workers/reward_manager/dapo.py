@@ -85,6 +85,7 @@ class DAPORewardManager(AbstractRewardManager):
             # decode
             prompt_str = self.tokenizer.decode(valid_prompt_ids, skip_special_tokens=True)
             response_str = self.tokenizer.decode(valid_response_ids, skip_special_tokens=True)
+            response_str_with_special_tokens = self.tokenizer.decode(valid_response_ids, skip_special_tokens=False)
             eos_token = self.tokenizer.eos_token
             if response_str.endswith(eos_token):
                 response_str = response_str[: -len(eos_token)]
@@ -93,11 +94,12 @@ class DAPORewardManager(AbstractRewardManager):
 
             data_source = data_item.non_tensor_batch[self.reward_fn_key]
 
-            extra_info = data_item.non_tensor_batch.get("extra_info", {})
+            extra_info = dict(data_item.non_tensor_batch.get("extra_info", {}) or {})
 
             rollout_reward_scores = data_item.non_tensor_batch.get("reward_scores", {})
 
             extra_info["rollout_reward_scores"] = rollout_reward_scores
+            extra_info["response_str_with_special_tokens"] = response_str_with_special_tokens
 
             result = self.compute_score(
                 data_source=data_source,
