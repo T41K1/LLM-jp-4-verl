@@ -115,6 +115,26 @@ def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, 
     return data, metrics
 
 
+def _compute_reward_extra_metrics(reward_extra_infos_dict: dict[str, list[Any]]) -> dict[str, float]:
+    """Aggregate numeric reward-extra fields for step-level logging."""
+    metrics = {}
+    for key, values in reward_extra_infos_dict.items():
+        if values is None:
+            continue
+        try:
+            arr = np.asarray(values)
+            if arr.size == 0:
+                continue
+            arr = arr.astype(np.float64)
+        except (TypeError, ValueError):
+            continue
+        finite = arr[np.isfinite(arr)]
+        if finite.size == 0:
+            continue
+        metrics[f"reward_extra/{key}/mean"] = float(np.mean(finite))
+    return metrics
+
+
 def compute_response_mask(data: DataProto):
     """Compute the attention mask for the response part of the sequence.
 
@@ -1615,6 +1635,7 @@ class RayPPOTrainer:
                 )
                 # collect metrics
                 metrics.update(compute_data_metrics(batch=batch, use_critic=self.use_critic))
+                metrics.update(_compute_reward_extra_metrics(reward_extra_infos_dict))
                 # GDPO per-component reward metrics
                 gdpo_reward_keys = self.config.algorithm.get("gdpo_reward_keys", None)
                 if gdpo_reward_keys and self.config.algorithm.adv_estimator in ("gdpo", AdvantageEstimator.GDPO):
