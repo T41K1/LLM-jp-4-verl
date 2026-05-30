@@ -554,9 +554,7 @@ class TestProcessValidationMetrics(unittest.TestCase):
 
         self.assertNotIn("pass@1", result["source1"]["acc"])
 
-        result = process_validation_metrics(
-            data_sources, sample_inputs, infos_dict, seed=42, compute_pass_at_k=True
-        )
+        result = process_validation_metrics(data_sources, sample_inputs, infos_dict, seed=42, compute_pass_at_k=True)
 
         self.assertAlmostEqual(result["source1"]["acc"]["pass@1"], 0.25)
         self.assertAlmostEqual(result["source1"]["acc"]["pass@2"], 0.5)
@@ -570,9 +568,7 @@ class TestProcessValidationMetrics(unittest.TestCase):
             "acc": [0.999999999, 0.0, 0.0, 0.0],
         }
 
-        result = process_validation_metrics(
-            data_sources, sample_inputs, infos_dict, seed=42, compute_pass_at_k=True
-        )
+        result = process_validation_metrics(data_sources, sample_inputs, infos_dict, seed=42, compute_pass_at_k=True)
 
         self.assertAlmostEqual(result["source1"]["acc"]["pass@1"], 0.25)
         self.assertAlmostEqual(result["source1"]["acc"]["pass@2"], 0.5)
